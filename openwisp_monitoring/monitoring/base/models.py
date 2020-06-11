@@ -157,7 +157,15 @@ class AbstractMetric(TimeStampedEditableModel):
             return
         self._notify_users(notification_type, alert_settings)
 
-    def write(self, value, time=None, database=None, check=True, extra_values=None):
+    def write(
+        self,
+        value,
+        time=None,
+        database=None,
+        check=True,
+        extra_values=None,
+        retention_policy=None,
+    ):
         """ write timeseries data """
         values = {self.field_name: value}
         if extra_values and isinstance(extra_values, dict):
@@ -170,6 +178,7 @@ class AbstractMetric(TimeStampedEditableModel):
             tags=self.tags,
             timestamp=time,
             database=database,
+            retention_policy=retention_policy,
         )
         post_metric_write.send(**signal_kwargs)
         # check can be disabled,

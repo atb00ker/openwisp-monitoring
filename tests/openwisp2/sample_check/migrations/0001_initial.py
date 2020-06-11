@@ -8,6 +8,8 @@ import jsonfield.fields
 import model_utils.fields
 import uuid
 
+from openwisp_monitoring.check.settings import CHECK_CLASSES
+
 
 class Migration(migrations.Migration):
 
@@ -56,7 +58,7 @@ class Migration(migrations.Migration):
                 (
                     'check',
                     models.CharField(
-                        choices=[('openwisp_monitoring.check.classes.Ping', 'Ping')],
+                        choices=CHECK_CLASSES,
                         db_index=True,
                         help_text='Select check type',
                         max_length=128,

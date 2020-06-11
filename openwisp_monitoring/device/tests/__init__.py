@@ -8,6 +8,7 @@ from swapper import load_model
 from openwisp_controller.config.models import Config, Device
 from openwisp_controller.config.tests import CreateConfigTemplateMixin
 
+from ...check.utils import manage_config_modified_retention_policy
 from ...monitoring.tests import TestMonitoringMixin
 from ..utils import manage_short_retention_policy
 
@@ -24,6 +25,7 @@ class TestDeviceMonitoringMixin(CreateConfigTemplateMixin, TestMonitoringMixin):
     def setUpClass(cls):
         super().setUpClass()
         manage_short_retention_policy()
+        manage_config_modified_retention_policy()
 
 
 class DeviceMonitoringTestCase(TestDeviceMonitoringMixin, TestCase):

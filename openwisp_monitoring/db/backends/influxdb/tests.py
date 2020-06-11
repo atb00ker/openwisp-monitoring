@@ -3,6 +3,11 @@ from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils.timezone import now
+from openwisp_monitoring.check.settings import (
+    CONFIG_CHECK_RETENTION_POLICY as config_modified_rp_duration,
+)
+from openwisp_monitoring.check.utils import CONFIG_CHECK_RP as config_modified_rp_name
+from openwisp_monitoring.check.utils import manage_config_modified_retention_policy
 from openwisp_monitoring.device.settings import SHORT_RETENTION_POLICY
 from openwisp_monitoring.device.utils import SHORT_RP, manage_short_retention_policy
 from openwisp_monitoring.monitoring.tests import TestMonitoringMixin
@@ -172,11 +177,18 @@ class TestDatabaseClient(TestMonitoringMixin, TestCase):
 
     def test_retention_policy(self):
         manage_short_retention_policy()
+        manage_config_modified_retention_policy()
         rp = timeseries_db.get_list_retention_policies()
-        self.assertEqual(len(rp), 2)
-        self.assertEqual(rp[1]['name'], SHORT_RP)
-        self.assertEqual(rp[1]['default'], False)
-        self.assertEqual(rp[1]['duration'], SHORT_RETENTION_POLICY)
+        self.assertEqual(len(rp), 3)
+        with self.subTest('Test Short retention policy'):
+            self.assertEqual(rp[1]['name'], SHORT_RP)
+            self.assertEqual(rp[1]['default'], False)
+            duration = SHORT_RETENTION_POLICY
+            self.assertEqual(rp[1]['duration'], duration)
+        with self.subTest('Test Config Modified retention policy'):
+            self.assertEqual(rp[2]['name'], config_modified_rp_name)
+            self.assertEqual(rp[2]['default'], False)
+            self.assertEqual(rp[2]['duration'], config_modified_rp_duration)
 
     def test_query_set(self):
         c = self._create_chart(configuration='histogram')

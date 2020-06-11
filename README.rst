@@ -224,6 +224,32 @@ has a value which is not in the expected range
 Example: ping is by default a critical metric which is expected to be always 1
 (reachable).
 
+``Available Checks``
+--------------------
+
+``Ping``
+~~~~~~~~
+
+This check returns information on device ``uptime``, ``downtime``,
+``RTT (Round trip time) maximum, minimum and average``.
+It creates a ``Ping`` metric to store this information and an ``AlertSettings``
+to monitor them.
+The Charts ``uptime``, ``packet loss`` and ``rtt`` are created. The ``fping``
+command is used to collect these metrics.
+You may choose to disable auto creation of this check by using the setting
+`OPENWISP_MONITORING_AUTO_PING <#OPENWISP_MONITORING_AUTO_PING>`_.
+
+``Configuration Modified``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It checks the configuration status of the device periodically and changes
+the device health status to ``PROBLEM``, if config status stays modified
+for more than `OPENWISP_MONITORING_DEVICE_CONFIG_CHECK_MAX_TIME <#OPENWISP_MONITORING_DEVICE_CONFIG_CHECK_MAX_TIME>`_.
+You may choose to disable auto creation of this check by using the
+setting `OPENWISP_MONITORING_AUTO_DEVICE_CONFIG_CHECK <#OPENWISP_MONITORING_AUTO_DEVICE_CONFIG_CHECK>`_.
+You can also change the retention policy for related metric by using
+the setting `OPENWISP_MONITORING_DEVICE_CONFIG_CHECK_RETENTION_POLICY <#OPENWISP_MONITORING_DEVICE_CONFIG_CHECK_RETENTION_POLICY>`_.
+
 Settings
 --------
 
@@ -252,6 +278,49 @@ in terms of disk space.
 +--------------+-------------+
 
 Whether ping checks are created automatically for devices.
+
+``OPENWISP_MONITORING_AUTO_DEVICE_CONFIG_CHECK``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++--------------+-------------+
+| **type**:    | ``bool``    |
++--------------+-------------+
+| **default**: | ``True``    |
++--------------+-------------+
+
+This setting allows you to choose whether `config_modified <#Configuration>` checks should be
+created automatically for newly registered devices. It's enabled by default.
+
+``OPENWISP_MONITORING_DEVICE_CONFIG_CHECK_MAX_TIME``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++--------------+-----------+
+| **type**:    |  ``int``  |
++--------------+-----------+
+| **default**: |   ``5``   |
++--------------+-----------+
+
+``config_modified`` check changes the device health status to ``PROBLEM`` if it's
+configuration status has been in the modified state for more than  the time defined in
+``OPENWISP_MONITORING_AUTO_DEVICE_CONFIG_CHECK``. It's 5 minutes by default.
+
+**Note**: If the setting ``OPENWISP_MONITORING_AUTO_DEVICE_CONFIG_CHECK``
+is disabled then this setting need not be declared.
+
+``OPENWISP_MONITORING_DEVICE_CONFIG_CHECK_RETENTION_POLICY``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++--------------+-------------+
+| **type**:    |  ``time``   |
++--------------+-------------+
+| **default**: | ``48h0m0s`` |
++--------------+-------------+
+
+This setting allows to modify the duration for which the metric data generated
+by ``config_modified`` check is to be retained.
+
+**Note**: If the setting ``OPENWISP_MONITORING_AUTO_DEVICE_CONFIG_CHECK``
+is disabled then this setting need not be declared.
 
 ``OPENWISP_MONITORING_AUTO_CHARTS``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -2,11 +2,12 @@ from django.apps import AppConfig
 from django.core.cache import cache
 from django.db.models.signals import post_delete, post_save
 from django.utils.translation import gettext_lazy as _
-from django_netjsonconfig.signals import checksum_requested
+from django_netjsonconfig.signals import checksum_requested, config_modified
 from openwisp_notifications.signals import notify
 from openwisp_notifications.types import register_notification_type
 from swapper import load_model
 
+from ..check import settings as check_settings
 from . import settings as app_settings
 from .signals import device_metrics_received, health_status_changed
 from .utils import get_device_recovery_cache_key, manage_short_retention_policy
@@ -22,6 +23,7 @@ class DeviceMonitoringConfig(AppConfig):
         self.register_notifcation_types()
         self.connect_is_working_changed()
         self.connect_device_signals()
+        self.connect_config_modified()
         self.device_recovery_detection()
 
     def connect_device_signals(self):
@@ -92,12 +94,12 @@ class DeviceMonitoringConfig(AppConfig):
             trigger_device_checks.delay(pk=instance.pk)
 
     @classmethod
-    def connect_is_working_changed(self):
+    def connect_is_working_changed(cls):
         from openwisp_controller.connection.models import DeviceConnection
         from openwisp_controller.connection.signals import is_working_changed
 
         is_working_changed.connect(
-            self.is_working_changed_receiver,
+            cls.is_working_changed_receiver,
             sender=DeviceConnection,
             dispatch_uid='is_working_changed_monitoring',
         )
@@ -162,3 +164,23 @@ class DeviceMonitoringConfig(AppConfig):
                 ),
             },
         )
+
+    @classmethod
+    def connect_config_modified(cls):
+        from openwisp_controller.config.models import Config
+
+        if check_settings.AUTO_CONFIG_CHECK:
+            config_modified.connect(
+                cls.config_modified_receiver,
+                sender=Config,
+                dispatch_uid='config_modified',
+            )
+
+    @classmethod
+    def config_modified_receiver(cls, sender, instance, **kwargs):
+        from ..check.tasks import perform_check
+
+        DeviceData = load_model('device_monitoring', 'DeviceData')
+        device = DeviceData.objects.get(config=instance)
+        check = device.checks.get(name='Configuration Modified')
+        perform_check.delay(check.id)

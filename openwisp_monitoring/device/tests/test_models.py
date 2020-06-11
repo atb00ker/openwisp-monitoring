@@ -3,6 +3,7 @@ from copy import deepcopy
 from unittest.mock import patch
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django_netjsonconfig.signals import config_modified
 from openwisp_notifications.signals import notify
 from swapper import load_model
 
@@ -626,3 +627,20 @@ class TestDeviceMonitoring(BaseTestCase):
         dc.save()
         notify_send.assert_not_called()
         perform_check.assert_not_called()
+
+    @patch('openwisp_monitoring.check.tasks.perform_check.delay')
+    def test_config_modified_receiver(self, mock_method):
+        c = self._create_config(status='applied', organization=self._create_org())
+        config_modified_path = 'openwisp_monitoring.check.classes.ConfigModified'
+        Check.objects.create(
+            name='Configuration Modified',
+            content_object=c.device,
+            check=config_modified_path,
+        )
+        c.config = {'general': {'description': 'test'}}
+        c.full_clean()
+        with catch_signal(config_modified) as handler:
+            c.save()
+            handler.assert_called_once()
+        self.assertEqual(c.status, 'modified')
+        self.assertEqual(mock_method.call_count, 1)

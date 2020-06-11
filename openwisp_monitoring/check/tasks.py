@@ -35,22 +35,43 @@ def perform_check(uuid):
 
 
 @shared_task
-def auto_create_ping(model, app_label, object_id, created):
+def auto_create_ping(model, app_label, object_id):
     """
     Called by openwisp_monitoring.check.models.auto_ping_receiver
     """
     Check = load_model('check', 'Check')
     ping_path = 'openwisp_monitoring.check.classes.Ping'
-    has_check = (
-        Check.objects.filter(
-            object_id=object_id, content_type__model='device', check=ping_path
-        ).count()
-        > 0
-    )
+    has_check = Check.objects.filter(
+        object_id=object_id, content_type__model='device', check=ping_path
+    ).exists()
     # create new check only if necessary
     if has_check:
         return
     ct = ContentType.objects.get(app_label=app_label, model=model)
     check = Check(name='Ping', check=ping_path, content_type=ct, object_id=object_id)
+    check.full_clean()
+    check.save()
+
+
+@shared_task
+def auto_create_config_modified(model, app_label, object_id):
+    """
+    Called by openwisp_monitoring.check.models.auto_config_modified_receiver
+    """
+    Check = load_model('check', 'Check')
+    config_modified_path = 'openwisp_monitoring.check.classes.ConfigModified'
+    has_check = Check.objects.filter(
+        object_id=object_id, content_type__model='device', check=config_modified_path,
+    ).exists()
+    # create new check only if necessary
+    if has_check:
+        return
+    ct = ContentType.objects.get(app_label=app_label, model=model)
+    check = Check(
+        name='Configuration Modified',
+        check=config_modified_path,
+        content_type=ct,
+        object_id=object_id,
+    )
     check.full_clean()
     check.save()
