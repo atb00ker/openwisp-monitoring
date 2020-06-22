@@ -51,23 +51,19 @@ class DeviceMonitoringTestCase(TestDeviceMonitoringMixin, TestCase):
         dd = DeviceData(pk=d.pk)
         self.assertDictEqual(dd.data, data)
         if no_resources:
-            metric_count, chart_count = 6, 4
+            metric_count, chart_count = 4, 4
         else:
-            metric_count, chart_count = 9, 7
+            metric_count, chart_count = 7, 7
         self.assertEqual(Metric.objects.count(), metric_count)
         self.assertEqual(Chart.objects.count(), chart_count)
         if_dict = {'wlan0': data['interfaces'][0], 'wlan1': data['interfaces'][1]}
         for ifname in ['wlan0', 'wlan1']:
             iface = if_dict[ifname]
-            for field_name in ['rx_bytes', 'tx_bytes']:
-                m = Metric.objects.get(
-                    key=ifname, field_name=field_name, object_id=d.pk
-                )
-                points = m.read(limit=10, order='time DESC')
-                self.assertEqual(len(points), 1)
-                self.assertEqual(
-                    points[0][m.field_name], iface['statistics'][field_name]
-                )
+            m = Metric.objects.get(key=ifname, field_name='rx_bytes', object_id=d.pk)
+            points = m.read(limit=10, order='time DESC', extra_fields=['tx_bytes'])
+            self.assertEqual(len(points), 1)
+            for field in ['rx_bytes', 'tx_bytes']:
+                self.assertEqual(points[0][field], iface['statistics'][field])
             m = Metric.objects.get(key=ifname, field_name='clients', object_id=d.pk)
             points = m.read(limit=10, order='time DESC')
             self.assertEqual(len(points), len(iface['wireless']['clients']))
@@ -95,8 +91,8 @@ class DeviceMonitoringTestCase(TestDeviceMonitoringMixin, TestCase):
         data3 = deepcopy(data)
         data3['interfaces'][0]['statistics']['rx_bytes'] = 500000000
         data3['interfaces'][0]['statistics']['tx_bytes'] = 300000000
-        data3['interfaces'][1]['statistics']['rx_bytes'] = 0
-        data3['interfaces'][1]['statistics']['tx_bytes'] = 0
+        data3['interfaces'][1]['statistics']['rx_bytes'] = 1
+        data3['interfaces'][1]['statistics']['tx_bytes'] = 1
         r = self._post_data(d.id, d.key, data3)
         if count == 3:
             return dd

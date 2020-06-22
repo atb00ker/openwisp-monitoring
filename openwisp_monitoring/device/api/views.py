@@ -43,7 +43,6 @@ class DeviceMetricView(GenericAPIView):
     serializer_class = serializers.Serializer
     permission_classes = [DevicePermission]
     schema = schema
-    statistics_stored = ['rx_bytes', 'tx_bytes']
 
     def get(self, request, pk):
         # ensure valid UUID
@@ -191,15 +190,25 @@ class DeviceMetricView(GenericAPIView):
         ct = ContentType.objects.get_for_model(Device)
         for interface in data.get('interfaces', []):
             ifname = interface['name']
-            for key, value in interface.get('statistics', {}).items():
-                if key not in self.statistics_stored:
-                    continue
-                name = '{0} {1}'.format(ifname, key)
-                metric, created = Metric._get_or_create(
-                    object_id=pk, content_type=ct, key=ifname, field_name=key, name=name
+            ifstats = interface.get('statistics', {})
+            if ifstats.get('rx_bytes') and ifstats.get('rx_bytes'):
+                field_value = self._calculate_increment(
+                    ifname, 'rx_bytes', ifstats.get('rx_bytes')
                 )
-                increment = self._calculate_increment(ifname, key, value)
-                metric.write(increment)
+                extra_values = {
+                    'tx_bytes': self._calculate_increment(
+                        ifname, 'tx_bytes', ifstats.get('tx_bytes')
+                    )
+                }
+                name = f'{ifname} traffic'
+                metric, created = Metric._get_or_create(
+                    object_id=pk,
+                    content_type=ct,
+                    key=ifname,
+                    field_name='rx_bytes',
+                    name=name,
+                )
+                metric.write(field_value, extra_values=extra_values)
                 if created:
                     self._create_traffic_chart(metric)
             try:
@@ -328,10 +337,7 @@ class DeviceMetricView(GenericAPIView):
         """
         create "traffic (GB)" chart
         """
-        if (
-            metric.field_name != 'tx_bytes'
-            or 'traffic' not in monitoring_settings.AUTO_CHARTS
-        ):
+        if 'traffic' not in monitoring_settings.AUTO_CHARTS:
             return
         chart = Chart(metric=metric, configuration='traffic')
         chart.full_clean()
