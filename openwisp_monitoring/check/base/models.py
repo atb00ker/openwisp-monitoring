@@ -72,6 +72,9 @@ class AbstractCheck(TimeStampedEditableModel):
         """
         initiates check instance and calls its check method
         """
+        if isinstance(self.content_object, Device):
+            if self.content_object.monitoring.disabled_checks:
+                return f'Checks have been disabled for the device "{self.content_object.name}".'
         return self.check_instance.check(store=True)
 
 

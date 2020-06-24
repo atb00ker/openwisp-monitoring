@@ -205,6 +205,9 @@ class AbstractDeviceMonitoring(TimeStampedEditableModel):
             app_settings.HEALTH_STATUS_LABELS['critical'],
         ),
     )
+    disabled_checks = models.BooleanField(
+        default=False, help_text='disables all checks for the device',
+    )
 
     class Meta:
         abstract = True
