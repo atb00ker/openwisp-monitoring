@@ -37,6 +37,10 @@
             fixedY = false,
             fixedYMax = 100,
             help, tooltip, heading;
+        // Metric admin
+        if (plotlyContainer === undefined) {
+            return;
+        }
         if (data.colors) {
             layout.colorway = data.colors;
         }
